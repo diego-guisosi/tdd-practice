@@ -1,5 +1,6 @@
 package br.com.dixy.tdd.practice.batch_builder;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,9 +13,11 @@ public class FairBatchBuilder {
     }
 
     public List<TypedElement> build(List<TypedElement> list) {
-        if (batchSize == 0) {
+        if (batchSize == 0 || list.isEmpty()) {
             return Collections.emptyList();
         }
-        return list;
+        ArrayList<TypedElement> batch = new ArrayList<>();
+        batch.add(list.get(0));
+        return batch;
     }
 }
