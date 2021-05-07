@@ -1,5 +1,12 @@
 package br.com.dixy.tdd.practice.batch_builder;
 
+import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
+
 /**
  * Given a list of elements of different types, build a batch of N elements containing a fair amount of
  * elements by type
@@ -20,5 +27,14 @@ package br.com.dixy.tdd.practice.batch_builder;
  * ]
  */
 public class FairBatchBuilderTest {
+
+    @Test
+    public void buildsEmptyBatchWhenListIsEmpty() {
+        int batchSize = 1;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> list = Collections.emptyList();
+        List<TypedElement> batch = builder.build(list);
+        assertTrue(batch.isEmpty());
+    }
 
 }
