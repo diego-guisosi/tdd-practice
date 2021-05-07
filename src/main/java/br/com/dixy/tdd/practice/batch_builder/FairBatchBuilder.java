@@ -1,8 +1,7 @@
 package br.com.dixy.tdd.practice.batch_builder;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FairBatchBuilder {
 
@@ -21,9 +20,24 @@ public class FairBatchBuilder {
 
     private ArrayList<TypedElement> buildBatch(List<TypedElement> list, int batchSize) {
         ArrayList<TypedElement> batch = new ArrayList<>();
-        for (int i = 0; i < batchSize; i++) {
-            batch.add(list.get(i));
+
+        Map<Type, List<TypedElement>> elementsByType = list.stream().collect(Collectors.groupingBy(TypedElement::type));
+        Set<Type> types = typesIn(elementsByType);
+        int numberOfTypes = types.size();
+        int batchSizeByType = batchSize / numberOfTypes;
+        for (Type type : types) {
+            List<TypedElement> elements = limitElementsByBatchSize(elementsByType.get(type), batchSizeByType);
+            batch.addAll(elements);
         }
+
         return batch;
+    }
+
+    private Set<Type> typesIn(Map<Type, List<TypedElement>> elementsByType) {
+        return elementsByType.keySet();
+    }
+
+    private List<TypedElement> limitElementsByBatchSize(List<TypedElement> elements, int batchSizeByType) {
+        return elements.size() <= batchSizeByType ? elements : elements.subList(0, batchSizeByType);
     }
 }

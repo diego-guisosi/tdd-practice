@@ -4,12 +4,20 @@ import java.util.Objects;
 
 public class TypedElement {
 
-    public final Type type;
-    public final String name;
+    private final Type type;
+    private final String name;
 
     public TypedElement(Type type, String name) {
         this.type = type;
         this.name = name;
+    }
+
+    public Type type() {
+        return type;
+    }
+
+    public String name() {
+        return name;
     }
 
     @Override
@@ -25,4 +33,11 @@ public class TypedElement {
         return Objects.hash(type, name);
     }
 
+    @Override
+    public String toString() {
+        return "TypedElement{" +
+                "type=" + type +
+                ", name='" + name + '\'' +
+                '}';
+    }
 }

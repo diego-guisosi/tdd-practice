@@ -7,6 +7,8 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -33,6 +35,7 @@ public class FairBatchBuilderTest {
 
     private static final TypedElement A1 = new TypedElement(Type.A, "A1");
     private static final TypedElement A2 = new TypedElement(Type.A, "A2");
+    private static final TypedElement B1 = new TypedElement(Type.B, "B1");
 
     @Test
     public void buildsEmptyBatchWhenListIsEmpty() {
@@ -78,6 +81,15 @@ public class FairBatchBuilderTest {
         assertEquals("element", A2, batch.get(1));
     }
 
+    @Test
+    public void buildsBatchWithOneElementOfEachTypeWhenListContainsTwoTypesOfElementsAndBatchSizeIsTwo() {
+        int batchSize = 2;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> batch = builder.build(aList(A1, A2, B1));
+        assertSize(batch, 2);
+        assertThat(batch, hasItems(A1, B1));
+    }
+
     private void assertEmpty(List<TypedElement> batch) {
         assertTrue("batch", batch.isEmpty());
     }
@@ -86,8 +98,8 @@ public class FairBatchBuilderTest {
         assertEquals("batchSize", expected, batch.size());
     }
 
-    private List<TypedElement> aList(TypedElement a1, TypedElement a2) {
-        return asList(a1, a2);
+    private List<TypedElement> aList(TypedElement... element) {
+        return asList(element);
     }
 
 }
