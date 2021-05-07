@@ -60,12 +60,22 @@ public class FairBatchBuilderTest {
     }
 
     @Test
-    public void buildsSingleElementBatchWhenListHasMoreThanOneElementAndBatchSizeIsOne() {
+    public void buildsSingleElementBatchWhenListHasMoreThanOneElementButBatchSizeIsOne() {
         int batchSize = 1;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2));
         assertSize(batch, 1);
         assertEquals("element", A1, batch.get(0));
+    }
+
+    @Test
+    public void buildsBatchWithTheSameContentOfListWhenListSizeIsEqualToBatchSize() {
+        int batchSize = 2;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> batch = builder.build(aList(A1, A2));
+        assertSize(batch, 2);
+        assertEquals("element", A1, batch.get(0));
+        assertEquals("element", A2, batch.get(1));
     }
 
     private void assertEmpty(List<TypedElement> batch) {

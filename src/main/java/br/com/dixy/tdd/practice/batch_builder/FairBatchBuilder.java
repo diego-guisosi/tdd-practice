@@ -16,8 +16,14 @@ public class FairBatchBuilder {
         if (batchSize == 0 || list.isEmpty()) {
             return Collections.emptyList();
         }
+        return buildBatch(list, Math.min(batchSize, list.size()));
+    }
+
+    private ArrayList<TypedElement> buildBatch(List<TypedElement> list, int batchSize) {
         ArrayList<TypedElement> batch = new ArrayList<>();
-        batch.add(list.get(0));
+        for (int i = 0; i < batchSize; i++) {
+            batch.add(list.get(i));
+        }
         return batch;
     }
 }
