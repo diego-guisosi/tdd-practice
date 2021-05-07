@@ -2,6 +2,7 @@ package br.com.dixy.tdd.practice.batch_builder;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +33,15 @@ public class FairBatchBuilderTest {
     public void buildsEmptyBatchWhenListIsEmpty() {
         int batchSize = 1;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
-        List<TypedElement> list = Collections.emptyList();
+        List<TypedElement> batch = builder.build(Collections.emptyList());
+        assertTrue(batch.isEmpty());
+    }
+
+    @Test
+    public void buildsEmptyBatchWhenBatchSizeIsZero() {
+        int batchSize = 0;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> list = Collections.singletonList(new TypedElement(Type.A, "A1"));
         List<TypedElement> batch = builder.build(list);
         assertTrue(batch.isEmpty());
     }
