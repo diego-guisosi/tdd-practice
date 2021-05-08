@@ -36,6 +36,8 @@ public class FairBatchBuilderTest {
     private static final TypedElement A1 = new TypedElement(Type.A, "A1");
     private static final TypedElement A2 = new TypedElement(Type.A, "A2");
     private static final TypedElement B1 = new TypedElement(Type.B, "B1");
+    private static final TypedElement B2 = new TypedElement(Type.B, "B2");
+    private static final TypedElement C1 = new TypedElement(Type.C, "C1");
 
     @Test
     public void buildsEmptyBatchWhenListIsEmpty() {
@@ -91,12 +93,21 @@ public class FairBatchBuilderTest {
     }
 
     @Test
-    public void complementsBatchWithTheTypeContainingTheHighestNumberOfElementsWhenBatchSizeIsNotReached() {
+    public void complementsBatchWithTheTypesContainingTheHighestNumberOfElementsWhenBatchSizeIsNotReached() {
         int batchSize = 3;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2, B1));
         assertSize(batch, 3);
         assertThat(batch, hasItems(A1, A2, B1));
+    }
+
+    @Test
+    public void doesNotRepeatElementsWhenComplementIsNecessary() {
+        int batchSize = 5;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> batch = builder.build(aList(A1, A2, B1, B2, C1));
+        assertSize(batch, 5);
+        assertThat(batch, hasItems(A1, A2, B1, B2, C1));
     }
 
     private void assertEmpty(List<TypedElement> batch) {

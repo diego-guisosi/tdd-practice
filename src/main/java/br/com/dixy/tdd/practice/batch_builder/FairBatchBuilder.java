@@ -42,19 +42,29 @@ public class FairBatchBuilder {
     }
 
     private void complementBatchWithRemainingElements(int batchSize, ArrayList<TypedElement> batch, Map<Type, List<TypedElement>> elementsByType) {
-        Map<Integer, List<TypedElement>> sortedBySize = groupAndSortBySize(elementsByType);
-        Integer highest = sortedBySize.keySet().iterator().next();
-        List<TypedElement> typedElements = sortedBySize.get(highest);
-        for (int i = typedElements.size() - 1; !reachedBatchSize(batchSize, batch); i--) {
-            batch.add(typedElements.get(i));
+        Map<TypedElementsSizeKey, List<TypedElement>> sortedBySize = groupAndSortBySize(elementsByType);
+        Iterator<TypedElementsSizeKey> highest = sortedBySize.keySet().iterator();
+        while (highest.hasNext() && !reachedBatchSize(batchSize, batch)) {
+            List<TypedElement> elements = sortedBySize.get(highest.next());
+            for (int i = lastIndexOf(elements); !reachedBatchSize(batchSize, batch) && i >= 0; i--) {
+                TypedElement element = elements.get(i);
+                if (batch.contains(element)) {
+                    continue;
+                }
+                batch.add(element);
+            }
         }
     }
 
-    private Map<Integer, List<TypedElement>> groupAndSortBySize(Map<Type, List<TypedElement>> elementsByType) {
-        Map<Integer, List<TypedElement>> sortedBySize = new TreeMap<>(Comparator.reverseOrder());
-        for (List<TypedElement> elements : elementsByType.values()) {
-            sortedBySize.put(elements.size(), elements);
-        }
+    private int lastIndexOf(List<TypedElement> elements) {
+        return elements.size() - 1;
+    }
+
+    private Map<TypedElementsSizeKey, List<TypedElement>> groupAndSortBySize(Map<Type, List<TypedElement>> elementsByType) {
+        Map<TypedElementsSizeKey, List<TypedElement>> sortedBySize = new TreeMap<>(Comparator.reverseOrder());
+        elementsByType.forEach((type, elements) -> {
+            sortedBySize.put(TypedElementsSizeKey.of(type, elements), elements);
+        });
         return sortedBySize;
     }
 
@@ -64,5 +74,51 @@ public class FairBatchBuilder {
 
     private List<TypedElement> limitElementsByBatchSize(List<TypedElement> elements, int batchSizeByType) {
         return elements.size() <= batchSizeByType ? elements : elements.subList(0, batchSizeByType);
+    }
+
+    private static class TypedElementsSizeKey implements Comparable<TypedElementsSizeKey> {
+
+        private final Type type;
+        private final Integer size;
+
+        private TypedElementsSizeKey(Type type, Integer size) {
+            this.type = type;
+            this.size = size;
+        }
+
+        public static TypedElementsSizeKey of(Type type, List<TypedElement> elements) {
+            return new TypedElementsSizeKey(type, elements.size());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TypedElementsSizeKey that = (TypedElementsSizeKey) o;
+            return Objects.equals(size, that.size) && type == that.type;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, size);
+        }
+
+        @Override
+        public String toString() {
+            return "HighestTypedElementsKey{" +
+                    "type=" + type +
+                    ", size=" + size +
+                    '}';
+        }
+
+        @Override
+        public int compareTo(TypedElementsSizeKey otherKey) {
+            int comparison = this.size.compareTo(otherKey.size);
+            if (comparison != 0) {
+                return comparison;
+            }
+            return this.type.compareTo(otherKey.type);
+        }
+
     }
 }
