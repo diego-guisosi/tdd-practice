@@ -90,6 +90,15 @@ public class FairBatchBuilderTest {
         assertThat(batch, hasItems(A1, B1));
     }
 
+    @Test
+    public void complementsBatchWithTheTypeContainingTheHighestNumberOfElementsWhenBatchSizeIsNotReached() {
+        int batchSize = 3;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> batch = builder.build(aList(A1, A2, B1));
+        assertSize(batch, 3);
+        assertThat(batch, hasItems(A1, A2, B1));
+    }
+
     private void assertEmpty(List<TypedElement> batch) {
         assertTrue("batch", batch.isEmpty());
     }

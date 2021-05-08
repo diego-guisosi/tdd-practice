@@ -30,7 +30,32 @@ public class FairBatchBuilder {
             batch.addAll(elements);
         }
 
+        if (!reachedBatchSize(batchSize, batch)) {
+            complementBatchWithRemainingElements(batchSize, batch, elementsByType);
+        }
+
         return batch;
+    }
+
+    private boolean reachedBatchSize(int batchSize, ArrayList<TypedElement> batch) {
+        return batch.size() == batchSize;
+    }
+
+    private void complementBatchWithRemainingElements(int batchSize, ArrayList<TypedElement> batch, Map<Type, List<TypedElement>> elementsByType) {
+        Map<Integer, List<TypedElement>> sortedBySize = groupAndSortBySize(elementsByType);
+        Integer highest = sortedBySize.keySet().iterator().next();
+        List<TypedElement> typedElements = sortedBySize.get(highest);
+        for (int i = typedElements.size() - 1; !reachedBatchSize(batchSize, batch); i--) {
+            batch.add(typedElements.get(i));
+        }
+    }
+
+    private Map<Integer, List<TypedElement>> groupAndSortBySize(Map<Type, List<TypedElement>> elementsByType) {
+        Map<Integer, List<TypedElement>> sortedBySize = new TreeMap<>(Comparator.reverseOrder());
+        for (List<TypedElement> elements : elementsByType.values()) {
+            sortedBySize.put(elements.size(), elements);
+        }
+        return sortedBySize;
     }
 
     private Set<Type> typesIn(Map<Type, List<TypedElement>> elementsByType) {
