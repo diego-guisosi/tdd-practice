@@ -15,109 +15,128 @@ public class FairBatchBuilder {
         if (batchSize == 0 || list.isEmpty()) {
             return Collections.emptyList();
         }
-        return buildBatch(list, Math.min(batchSize, list.size()));
+        return new FairBatch(list, batchSize).build();
     }
 
-    private ArrayList<TypedElement> buildBatch(List<TypedElement> list, int batchSize) {
-        ArrayList<TypedElement> batch = new ArrayList<>();
+    private static class FairBatch {
 
-        Map<Type, List<TypedElement>> elementsByType = list.stream().collect(Collectors.groupingBy(TypedElement::type));
-        Set<Type> types = typesIn(elementsByType);
-        int numberOfTypes = types.size();
-        int batchSizeByType = batchSize / numberOfTypes;
-        for (Type type : types) {
-            List<TypedElement> elements = limitElementsByBatchSize(elementsByType.get(type), batchSizeByType);
-            batch.addAll(elements);
+        private final int batchSize;
+        private final List<TypedElement> batch;
+        private final Map<Type, List<TypedElement>> elementsByType;
+        private final Set<Type> types;
+        private final int allowedBatchSizeByType;
+
+        public FairBatch(List<TypedElement> elements, int batchSize) {
+            this.batch = new ArrayList<>();
+            this.batchSize = Math.min(batchSize, elements.size());
+            this.elementsByType = elements.stream().collect(Collectors.groupingBy(TypedElement::type));
+            this.types = typesIn(elementsByType);
+            this.allowedBatchSizeByType = batchSize / types.size();
         }
 
-        if (!reachedBatchSize(batchSize, batch)) {
-            complementBatchWithRemainingElements(batchSize, batch, elementsByType);
+        public List<TypedElement> build() {
+            selectAllowedElements();
+            complementWithRemainingElementsIfPossible();
+            return batch;
         }
 
-        return batch;
-    }
+        private Set<Type> typesIn(Map<Type, List<TypedElement>> elementsByType) {
+            return elementsByType.keySet();
+        }
 
-    private boolean reachedBatchSize(int batchSize, ArrayList<TypedElement> batch) {
-        return batch.size() == batchSize;
-    }
+        private void selectAllowedElements() {
+            for (Type type : types) {
+                batch.addAll(selectAllowedElementsOf(type));
+            }
+        }
 
-    private void complementBatchWithRemainingElements(int batchSize, ArrayList<TypedElement> batch, Map<Type, List<TypedElement>> elementsByType) {
-        Map<TypedElementsSizeKey, List<TypedElement>> sortedBySize = groupAndSortBySize(elementsByType);
-        Iterator<TypedElementsSizeKey> highest = sortedBySize.keySet().iterator();
-        while (highest.hasNext() && !reachedBatchSize(batchSize, batch)) {
-            List<TypedElement> elements = sortedBySize.get(highest.next());
-            for (int i = lastIndexOf(elements); !reachedBatchSize(batchSize, batch) && i >= 0; i--) {
-                TypedElement element = elements.get(i);
-                if (batch.contains(element)) {
-                    continue;
+        private List<TypedElement> selectAllowedElementsOf(Type type) {
+            List<TypedElement> elements = elementsByType.get(type);
+            return elements.size() <= allowedBatchSizeByType ? elements : elements.subList(0, allowedBatchSizeByType);
+        }
+
+        private void complementWithRemainingElementsIfPossible() {
+            if (!hasRoomToAddMoreElements()) {
+                return;
+            }
+            Map<TypedElementsKey, List<TypedElement>> sortedBySize = groupAndSortBySize(elementsByType);
+            Iterator<TypedElementsKey> highestKeys = getHighestKeys(sortedBySize);
+            while (highestKeys.hasNext() && hasRoomToAddMoreElements()) {
+                List<TypedElement> elements = sortedBySize.get(highestKeys.next());
+                for (int i = lastIndexOf(elements); hasRoomToAddMoreElements() && i >= 0; i--) {
+                    TypedElement element = elements.get(i);
+                    if (batch.contains(element)) {
+                        continue;
+                    }
+                    batch.add(element);
                 }
-                batch.add(element);
             }
         }
-    }
 
-    private int lastIndexOf(List<TypedElement> elements) {
-        return elements.size() - 1;
-    }
-
-    private Map<TypedElementsSizeKey, List<TypedElement>> groupAndSortBySize(Map<Type, List<TypedElement>> elementsByType) {
-        Map<TypedElementsSizeKey, List<TypedElement>> sortedBySize = new TreeMap<>(Comparator.reverseOrder());
-        elementsByType.forEach((type, elements) -> {
-            sortedBySize.put(TypedElementsSizeKey.of(type, elements), elements);
-        });
-        return sortedBySize;
-    }
-
-    private Set<Type> typesIn(Map<Type, List<TypedElement>> elementsByType) {
-        return elementsByType.keySet();
-    }
-
-    private List<TypedElement> limitElementsByBatchSize(List<TypedElement> elements, int batchSizeByType) {
-        return elements.size() <= batchSizeByType ? elements : elements.subList(0, batchSizeByType);
-    }
-
-    private static class TypedElementsSizeKey implements Comparable<TypedElementsSizeKey> {
-
-        private final Type type;
-        private final Integer size;
-
-        private TypedElementsSizeKey(Type type, Integer size) {
-            this.type = type;
-            this.size = size;
+        private Iterator<TypedElementsKey> getHighestKeys(Map<TypedElementsKey, List<TypedElement>> sortedBySize) {
+            return sortedBySize.keySet().iterator();
         }
 
-        public static TypedElementsSizeKey of(Type type, List<TypedElement> elements) {
-            return new TypedElementsSizeKey(type, elements.size());
+        private Map<TypedElementsKey, List<TypedElement>> groupAndSortBySize(Map<Type, List<TypedElement>> elementsByType) {
+            Map<TypedElementsKey, List<TypedElement>> sortedBySize = new TreeMap<>(Comparator.reverseOrder());
+            elementsByType.forEach((type, elements) -> {
+                sortedBySize.put(TypedElementsKey.of(type, elements), elements);
+            });
+            return sortedBySize;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            TypedElementsSizeKey that = (TypedElementsSizeKey) o;
-            return Objects.equals(size, that.size) && type == that.type;
+        private boolean hasRoomToAddMoreElements() {
+            return batch.size() < batchSize;
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(type, size);
+        private int lastIndexOf(List<TypedElement> elements) {
+            return elements.size() - 1;
         }
 
-        @Override
-        public String toString() {
-            return "HighestTypedElementsKey{" +
-                    "type=" + type +
-                    ", size=" + size +
-                    '}';
-        }
+        private static class TypedElementsKey implements Comparable<TypedElementsKey> {
 
-        @Override
-        public int compareTo(TypedElementsSizeKey otherKey) {
-            int comparison = this.size.compareTo(otherKey.size);
-            if (comparison != 0) {
-                return comparison;
+            private final Type type;
+            private final Integer size;
+
+            private TypedElementsKey(Type type, Integer size) {
+                this.type = type;
+                this.size = size;
             }
-            return this.type.compareTo(otherKey.type);
+
+            public static TypedElementsKey of(Type type, List<TypedElement> elements) {
+                return new TypedElementsKey(type, elements.size());
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                TypedElementsKey that = (TypedElementsKey) o;
+                return Objects.equals(size, that.size) && type == that.type;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(type, size);
+            }
+
+            @Override
+            public String toString() {
+                return "HighestTypedElementsKey{" +
+                        "type=" + type +
+                        ", size=" + size +
+                        '}';
+            }
+
+            @Override
+            public int compareTo(TypedElementsKey otherKey) {
+                int comparison = this.size.compareTo(otherKey.size);
+                if (comparison != 0) {
+                    return comparison;
+                }
+                return this.type.compareTo(otherKey.type);
+            }
+
         }
 
     }
