@@ -5,21 +5,23 @@ import java.util.List;
 
 class TypedElementsGroup {
 
-    private final List<TypedElement> elements;
+    private final TypedElementsGroupReversedIterator iterator;
 
-    public TypedElementsGroup(List<TypedElement> elements) {
-        this.elements = elements;
+    TypedElementsGroup(List<TypedElement> elements) {
+        this.iterator = new TypedElementsGroupReversedIterator(elements);
     }
 
     public void complement(FairBatch batch) {
-        TypedElementsGroupReversedIterator iterator = new TypedElementsGroupReversedIterator(elements);
         while (iterator.hasNext() && !batch.isFull()) {
-            TypedElement element = iterator.next();
-            if (batch.contains(element)) {
-                continue;
-            }
-            batch.add(element);
+            addElementToBatchIfPossible(batch, iterator.next());
         }
+    }
+
+    private void addElementToBatchIfPossible(FairBatch batch, TypedElement element) {
+        if (batch.contains(element)) {
+            return;
+        }
+        batch.add(element);
     }
 
     private static class TypedElementsGroupReversedIterator implements Iterator<TypedElement> {

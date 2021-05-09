@@ -7,7 +7,7 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -69,8 +69,8 @@ public class FairBatchBuilderTest {
         int batchSize = 1;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2));
-        assertSize(batch, 1);
-        assertEquals("element", A1, batch.get(0));
+        assertSize(batch, batchSize);
+        assertThat(batch, hasItem(A1));
     }
 
     @Test
@@ -78,9 +78,8 @@ public class FairBatchBuilderTest {
         int batchSize = 2;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2));
-        assertSize(batch, 2);
-        assertEquals("element", A1, batch.get(0));
-        assertEquals("element", A2, batch.get(1));
+        assertSize(batch, batchSize);
+        assertThat(batch, hasItems(A1, A2));
     }
 
     @Test
@@ -88,7 +87,7 @@ public class FairBatchBuilderTest {
         int batchSize = 2;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2, B1));
-        assertSize(batch, 2);
+        assertSize(batch, batchSize);
         assertThat(batch, hasItems(A1, B1));
     }
 
@@ -97,7 +96,7 @@ public class FairBatchBuilderTest {
         int batchSize = 3;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2, B1));
-        assertSize(batch, 3);
+        assertSize(batch, batchSize);
         assertThat(batch, hasItems(A1, A2, B1));
     }
 
@@ -106,8 +105,17 @@ public class FairBatchBuilderTest {
         int batchSize = 5;
         FairBatchBuilder builder = new FairBatchBuilder(batchSize);
         List<TypedElement> batch = builder.build(aList(A1, A2, B1, B2, C1));
-        assertSize(batch, 5);
+        assertSize(batch, batchSize);
         assertThat(batch, hasItems(A1, A2, B1, B2, C1));
+    }
+
+    @Test
+    public void buildsCompleteBatchEvenWhenThereIsNoRoomForEveryTypeOfElement() {
+        int batchSize = 2;
+        FairBatchBuilder builder = new FairBatchBuilder(batchSize);
+        List<TypedElement> batch = builder.build(aList(A1, B1, C1));
+        assertSize(batch, batchSize);
+        assertThat(batch, anyOf(hasItem(A1), hasItem(B1), hasItem(C1)));
     }
 
     private void assertEmpty(List<TypedElement> batch) {

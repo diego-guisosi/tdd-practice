@@ -17,10 +17,10 @@ class TypedElementsGroupSortedBySizeIterator implements Iterator<TypedElementsGr
     private void groupAndSort(List<TypedElement> elements) {
         elements.stream()
                 .collect(Collectors.groupingBy(TypedElement::type))
-                .forEach(this::groupByType);
+                .forEach(this::groupByTypeAndSize);
     }
 
-    private void groupByType(Type type, List<TypedElement> typedElements) {
+    private void groupByTypeAndSize(Type type, List<TypedElement> typedElements) {
         groupsSortedByKey.put(TypedElementsGroupSizeKey.of(type, typedElements), new TypedElementsGroup(typedElements));
     }
 
